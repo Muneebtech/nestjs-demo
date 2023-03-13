@@ -2,23 +2,21 @@ FROM node:18.13-alpine as builder
 
 ENV NODE_ENV build
 
+# Create app directory
 WORKDIR /usr/src/app
 
-COPY . /usr/src/app/
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
 
-RUN npm ci \ 
-  && npm run build \ 
-  && npm prune --production
+# Install app dependencies
+RUN npm install
 
+# Bundle app source
+COPY . .
 
-FROM node:18.13-alpine
+# Creates a "dist" folder with the production build
+RUN npm run build
 
-ENV NODE_ENV production
+# Start the server using the production build
+CMD [ "node", "dist/main.js" ]
 
-WORKDIR /usr/src/app
-
-COPY --from=builder /usr/src/app/package*.json /usr/src/app/
-COPY --from=builder /usr/src/app/node_modules /usr/src/app/node_modules/
-COPY --from=builder /usr/src/app/dist /usr/src/app/dist/
-
-CMD [ "node","dist/src/main.js" ]
